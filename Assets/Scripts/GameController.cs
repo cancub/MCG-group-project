@@ -5,6 +5,7 @@ using UnityEngine;
 public struct edge
 {
 	public Vector2 p,q;
+	public float cost;
 }
 
 public struct trafficLight
@@ -35,14 +36,16 @@ public class GameController : MonoBehaviour {
 	public GameObject mapParent;
 	public float lightSwitchProbability;
 	public float intersectionLightProbability;
+	public Vector2 startingLocation;
 	private List<edge> map;
+	private List<edge> paths;
 	private List<List<GameObject>> cubes;
 	private List<trafficLight> trafficLights;
 	private List<float> lightPeriods;
 	private List<float> nextLightSwitch;
-	private Vector2 playerLocation;
 	private Vector2 size;
 	private Vector2 topLeft;
+	private List<Vector2> changesLocations;
 
 
 	// Use this for initialization
@@ -54,15 +57,17 @@ public class GameController : MonoBehaviour {
 		nextLightSwitch = new List<float> ();
 		size = 10f * new Vector2 (ground.transform.localScale.x, ground.transform.localScale.z) - new Vector2(1f,1f);
 		topLeft = new Vector2 (size.x/ -2f, size.y / 2f);
-		print (size);
-		print (topLeft);
+//		print (size);
+//		print (topLeft);
 		BuildInitialMap ();
+		paths = LPAStar.GetInitialPaths (startingLocation, new Vector2(2,2), map);
 	}
 	
 	// Update is called once per frame
 	void Update () {
 //		RandomMapChange ();
 		ScheduledMapChanges();
+
 	}
 
 	private void BuildInitialMap() {
@@ -84,12 +89,14 @@ public class GameController : MonoBehaviour {
 							// add the edge from this node to the node to the west
 							e.p = new Vector2 (i, j - 1);
 							e.q = new Vector2 (i, j);
+							e.cost = (e.p - e.q).magnitude;
 							map.Add (e);
 						}
 						if (j < (int)size.y) {
 							// add the edge from this node to the node to the east
 							e.p = new Vector2 (i, j);
 							e.q = new Vector2 (i, j + 1);
+							e.cost = (e.p - e.q).magnitude;
 							map.Add (e);
 						}
 
@@ -101,12 +108,14 @@ public class GameController : MonoBehaviour {
 							// add the edge from this node to the node to the north
 							e.p = new Vector2 (i - 1, j);
 							e.q = new Vector2 (i, j);
+							e.cost = (e.p - e.q).magnitude;
 							map.Add (e);
 						}
 						if (i < (int)size.x) {
 							// add the edge from this node to the node to the south
 							e.p = new Vector2 (i, j);
 							e.q = new Vector2 (i + 1, j);
+							e.cost = (e.p - e.q).magnitude;
 							map.Add (e);
 						}
 					}
@@ -250,27 +259,31 @@ public class GameController : MonoBehaviour {
 		Vector3 cubePosition;
 		// if ns is true, it means that we are building edges in the north-south direction
 		// if ns is false, build edges in the east-west.
-		edge newEdge;
+		edge e;
 		if (ns) {
 			// north edge
-			newEdge.p = new Vector2 ((float)i - 1f, (float)j);
-			newEdge.q = new Vector2 ((float)i, (float)j);
-			map.Add (newEdge);
+			e.p = new Vector2 ((float)i - 1f, (float)j);
+			e.q = new Vector2 ((float)i, (float)j);
+			e.cost = (e.p - e.q).magnitude;
+			map.Add (e);
 
 			// south edge
-			newEdge.p = new Vector2 ((float)i, (float)j);
-			newEdge.q = new Vector2 ((float)i + 1f, (float)j);
-			map.Add (newEdge);
+			e.p = new Vector2 ((float)i, (float)j);
+			e.q = new Vector2 ((float)i + 1f, (float)j);
+			e.cost = (e.p - e.q).magnitude;
+			map.Add (e);
 		} else {
 			// west edge
-			newEdge.p = new Vector2 ((float)i, (float)j-1f);
-			newEdge.q = new Vector2 ((float)i, (float)j);
-			map.Add (newEdge);
+			e.p = new Vector2 ((float)i, (float)j-1f);
+			e.q = new Vector2 ((float)i, (float)j);
+			e.cost = (e.p - e.q).magnitude;
+			map.Add (e);
 
 			// south edge
-			newEdge.p = new Vector2 ((float)i, (float)j);
-			newEdge.q = new Vector2 ((float)i, (float)j+1f);
-			map.Add (newEdge);
+			e.p = new Vector2 ((float)i, (float)j);
+			e.q = new Vector2 ((float)i, (float)j+1f);
+			e.cost = (e.p - e.q).magnitude;
+			map.Add (e);
 		}
 
 		// in either case, make the cube at this position invisible so that traffic can roll through

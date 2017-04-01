@@ -2,15 +2,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class LPAStar : MonoBehaviour {
+public class LPAStar{
 
-	// Use this for initialization
-	void Start () {
-		
+	private List<edge> paths;
+
+	public static List<edge> GetInitialPaths(Vector2 start, Vector2 end, List<edge> graph) {
+		List<edge> initialPaths = new List<edge> ();
+
+		return initialPaths;
 	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
+
+//	public static List<Vector2> GetPath() {
+//
+//	}
 }
