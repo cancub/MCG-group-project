@@ -34,6 +34,7 @@ public class GameController : MonoBehaviour {
 
 	public GameObject ground;
 	public GameObject mapParent;
+	public GameObject player;
 	public float lightSwitchProbability;
 	public float intersectionLightProbability;
 	public Vector2 startingLocation;
@@ -60,6 +61,7 @@ public class GameController : MonoBehaviour {
 //		print (size);
 //		print (topLeft);
 		BuildInitialMap ();
+		player.transform.position = (Vector3)startingLocation;
 		paths = LPAStar.GetInitialPaths (startingLocation, new Vector2(2,2), map);
 	}
 	
