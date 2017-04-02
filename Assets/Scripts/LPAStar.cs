@@ -7,7 +7,7 @@ public class LPAStar{
 	private List<edge> paths;
 
 	public static List<edge> GetInitialPaths(Vector2 start, Vector2 end, List<edge> graph) {
-		List<edge> initialPaths = new List<edge> ();
+		List<edge> initialPaths = AStar.navigate(start,end,graph);
 
 		return initialPaths;
 	}

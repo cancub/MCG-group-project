@@ -94,7 +94,7 @@ public class GameController : MonoBehaviour {
 						if (j < (int)size.x) {
 							// add the edge from this node to the node to the east
 							e.p = new Vector2 (x, y);
-							e.q = new Vector2 (x, y + 1);
+							e.q = new Vector2 (x+1, y);
 							e.cost = (e.p - e.q).magnitude;
 							map.Add (e);
 						}
@@ -106,7 +106,7 @@ public class GameController : MonoBehaviour {
 						if (i < (int)size.y) {
 							// add the edge from this node to the node to the south
 							e.p = new Vector2 (x, y);
-							e.q = new Vector2 (x+ 1, y);
+							e.q = new Vector2 (x, y-1);
 							e.cost = (e.p - e.q).magnitude;
 							map.Add (e);
 						}
