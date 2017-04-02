@@ -38,6 +38,7 @@ public class GameController : MonoBehaviour {
 	public float lightSwitchProbability;
 	public float intersectionLightProbability;
 	public Vector2 startingLocation;
+	public Vector2 targetLocation;
 	private List<edge> map;
 	private List<edge> paths;
 	private List<List<GameObject>> cubes;
@@ -76,28 +77,24 @@ public class GameController : MonoBehaviour {
 		// build an initial grid that is essentially a network of straight roads
 
 		edge e;
+		float x, y;
 
-		for (int i = 0; i < size.x + 1; i++) {
+		for (int i = 0; i < size.y + 1; i++) {
 			cubes.Add(new List<GameObject>());
-			for (int j = 0; j < size.y + 1; j++) {
+			for (int j = 0; j < size.x + 1; j++) {
+				x = j + topLeft.x; // axes are inverted between spatial and matrix coordinates
+				y = topLeft.y - i;
 				// the cubes will be used as a visual reference for the pathfinding
 				cubes[i].Add(GameObject.CreatePrimitive(PrimitiveType.Cube));
 				cubes [i] [j].transform.parent = mapParent.transform;
 
 				if (i % 4 == 2 || j % 4 == 2) {
 					if (i % 4 == 2) {
-						// roads in the east-west direction 
-						if (j > 0) {
-							// add the edge from this node to the node to the west
-							e.p = new Vector2 (i, j - 1);
-							e.q = new Vector2 (i, j);
-							e.cost = (e.p - e.q).magnitude;
-							map.Add (e);
-						}
-						if (j < (int)size.y) {
+						// roads in the east-west direction
+						if (j < (int)size.x) {
 							// add the edge from this node to the node to the east
-							e.p = new Vector2 (i, j);
-							e.q = new Vector2 (i, j + 1);
+							e.p = new Vector2 (x, y);
+							e.q = new Vector2 (x, y + 1);
 							e.cost = (e.p - e.q).magnitude;
 							map.Add (e);
 						}
@@ -106,28 +103,21 @@ public class GameController : MonoBehaviour {
 
 					if (j % 4 == 2) {
 						// roads in the north-south direction
-						if (i > 0) {
-							// add the edge from this node to the node to the north
-							e.p = new Vector2 (i - 1, j);
-							e.q = new Vector2 (i, j);
-							e.cost = (e.p - e.q).magnitude;
-							map.Add (e);
-						}
-						if (i < (int)size.x) {
+						if (i < (int)size.y) {
 							// add the edge from this node to the node to the south
-							e.p = new Vector2 (i, j);
-							e.q = new Vector2 (i + 1, j);
+							e.p = new Vector2 (x, y);
+							e.q = new Vector2 (x+ 1, y);
 							e.cost = (e.p - e.q).magnitude;
 							map.Add (e);
 						}
 					}
 					// no matter what, the cube should be set to be invisible at this location
-					cubes [i] [j].transform.position = new Vector3 (topLeft.x + (float)i, topLeft.y - (float)j, 1f);
+					cubes [i] [j].transform.position = new Vector3 (x, y, 1f);
 						
 				} else {
 					// othwerise this is a cube that is part of a building, so create it but make it visible
 					// by placing it on the plane
-					cubes [i] [j].transform.position = new Vector3 (topLeft.x + (float)i, topLeft.y - (float)j, 0);
+					cubes [i] [j].transform.position = new Vector3 (x, y, 0);
 				}
 			}
 		}
@@ -135,12 +125,14 @@ public class GameController : MonoBehaviour {
 		trafficLight light;
 
 		// now go through the intersections and create and set traffic lights
-		for (int i = 0; i < (int)size.x; i++) {
-			for (int j = 0; j < (int)size.y; j++) {
+		for (int i = 0; i < (int)size.y; i++) {
+			for (int j = 0; j < (int)size.x; j++) {
+				x = j + topLeft.x; // axes are inverted between spatial and matrix coordinates
+				y = topLeft.y - i;
 				if (i % 4 == 2 && j % 4 == 2 && Random.value < intersectionLightProbability) {
 					// if both the x and y are streets then we have an intersection. with some probability,
 					// add a traffic light at intersections and provide a period/timer for switching on and off
-					light.location = new Vector2(i,j);
+					light.location = new Vector2(x,y);
 					light.status = (Random.value > 0.5f);
 					trafficLights.Add (light);
 					SetTrafficLight (light);
@@ -177,6 +169,8 @@ public class GameController : MonoBehaviour {
 
 	private void SetTrafficLight (trafficLight light) {
 		Vector3 cubePosition;
+		int i = (int)(topLeft.y - light.location.y);
+		int j = (int)(light.location.x - topLeft.x);
 
 		if (light.status) {
 			// true representes that traffic is blocked in the north-south direction, so remove the edges
@@ -185,16 +179,16 @@ public class GameController : MonoBehaviour {
 			// we know the location of the light, so we can simply break any edges that contain the vertices above
 			// and below
 			BreakEdges(new Vector2(light.location.x-1f,light.location.y));
-			BreakEdges(new Vector2(light.location.x+1f,light.location.y));
+			BreakEdges (new Vector2 (light.location.x + 1f, light.location.y));
 
 			// now make visible the cubes to the north and south
-			cubePosition = cubes [(int)light.location.x - 1] [(int)light.location.y].transform.position;
+			cubePosition = cubes [i - 1] [j].transform.position;
 			cubePosition.z = 0;
-			cubes [(int)light.location.x - 1] [(int)light.location.y].transform.position = cubePosition;
+			cubes [i - 1] [j].transform.position = cubePosition;
 
-			cubePosition = cubes [(int)light.location.x + 1] [(int)light.location.y].transform.position;
+			cubePosition = cubes [i + 1] [j].transform.position;
 			cubePosition.z = 0;
-			cubes [(int)light.location.x + 1] [(int)light.location.y].transform.position = cubePosition;
+			cubes [i+1] [j].transform.position = cubePosition;
 		} else {
 			// false representes that traffic is blocked in the east-west direction, so remove the edges
 			// that contain these vertices and show the cubes associated with these vertices
@@ -204,13 +198,13 @@ public class GameController : MonoBehaviour {
 			BreakEdges(new Vector2(light.location.x,light.location.y-1f));
 			BreakEdges(new Vector2(light.location.x,light.location.y+1f));
 
-			cubePosition = cubes [(int)light.location.x] [(int)light.location.y - 1].transform.position;
+			cubePosition = cubes [i] [j - 1].transform.position;
 			cubePosition.z = 0;
-			cubes [(int)light.location.x] [(int)light.location.y - 1].transform.position = cubePosition;
+			cubes [i] [j - 1].transform.position = cubePosition;
 
-			cubePosition = cubes [(int)light.location.x] [(int)light.location.y+1].transform.position;
+			cubePosition = cubes [i] [j+1].transform.position;
 			cubePosition.z = 0;
-			cubes [(int)light.location.x] [(int)light.location.y +1].transform.position = cubePosition;
+			cubes [i] [j+1].transform.position = cubePosition;
 		}
 	}
 
@@ -222,34 +216,39 @@ public class GameController : MonoBehaviour {
 		light.status = !light.status;
 		trafficLights [index] = light;
 
+		int i = (int)(topLeft.y - light.location.y);
+		int j = (int)(light.location.x - topLeft.x);
+
 
 		if (light.status) {
-			// true represents that traffic is blocked in the north-south direction, so remove the edges
+			// true represents that traffic will now be blocked in the north-south direction, so remove the edges
 			// that contain these vertices and show the cubes associated with these vertices
 
 			// we know the location of the light, so we can simply start traffic above and below and stop traffic
 			// to the left and right
-			StopTraffic((int)light.location.x - 1, (int)light.location.y);
-			StopTraffic((int)light.location.x + 1, (int)light.location.y);
+			StopTraffic(i - 1, j);
+			StopTraffic(i + 1, j);
 			// start traffic in the east-west direction
-			StartTraffic ((int)light.location.x, (int)light.location.y - 1, !light.status);
-			StartTraffic ((int)light.location.x, (int)light.location.y + 1, !light.status);
+			StartTraffic (i, j - 1, !light.status);
+			StartTraffic (i, j + 1, !light.status);
 		} else {
 			// false representes that traffic is blocked in the east-west direction, so remove the edges
 			// that contain these vertices and show the cubes associated with these vertices
-			StopTraffic((int)light.location.x, (int)light.location.y-1);
-			StopTraffic((int)light.location.x, (int)light.location.y+1);
+			StopTraffic(i, j-1);
+			StopTraffic(i, j+1);
 			// start the traffic in the north-south direction
-			StartTraffic ((int)light.location.x-1, (int)light.location.y, !light.status);
-			StartTraffic ((int)light.location.x+1, (int)light.location.y, !light.status);
+			StartTraffic (i-1, j, !light.status);
+			StartTraffic (i+1, j, !light.status);
 		}
 	}
 
 	private void StopTraffic(int i, int j) {
 		Vector3 cubePosition;
+		float x = j + topLeft.x; // axes are inverted between spatial and matrix coordinates
+		float y = topLeft.y - i;
 
 		// break all the edges that contain this vertex
-		BreakEdges (new Vector2 ((float)i, (float)j));
+		BreakEdges (new Vector2 (x, y));
 
 		// now make visible the cubes at this node to visually stop traffic
 		cubePosition = cubes [i] [j].transform.position;
@@ -259,31 +258,33 @@ public class GameController : MonoBehaviour {
 
 	private void StartTraffic(int i, int j, bool ns) {
 		Vector3 cubePosition;
+		float x = j + topLeft.x; // axes are inverted between spatial and matrix coordinates
+		float y = topLeft.y - i;
 		// if ns is true, it means that we are building edges in the north-south direction
 		// if ns is false, build edges in the east-west.
 		edge e;
 		if (ns) {
 			// north edge
-			e.p = new Vector2 ((float)i - 1f, (float)j);
-			e.q = new Vector2 ((float)i, (float)j);
+			e.p = new Vector2 (x - 1f, y);
+			e.q = new Vector2 (x, y);
 			e.cost = (e.p - e.q).magnitude;
 			map.Add (e);
 
 			// south edge
-			e.p = new Vector2 ((float)i, (float)j);
-			e.q = new Vector2 ((float)i + 1f, (float)j);
+			e.p = new Vector2 (x, y);
+			e.q = new Vector2 (x + 1f, y);
 			e.cost = (e.p - e.q).magnitude;
 			map.Add (e);
 		} else {
 			// west edge
-			e.p = new Vector2 ((float)i, (float)j-1f);
-			e.q = new Vector2 ((float)i, (float)j);
+			e.p = new Vector2 (x, y-1f);
+			e.q = new Vector2 (x, y);
 			e.cost = (e.p - e.q).magnitude;
 			map.Add (e);
 
 			// south edge
-			e.p = new Vector2 ((float)i, (float)j);
-			e.q = new Vector2 ((float)i, (float)j+1f);
+			e.p = new Vector2 (x, y);
+			e.q = new Vector2 (x, y+1f);
 			e.cost = (e.p - e.q).magnitude;
 			map.Add (e);
 		}
