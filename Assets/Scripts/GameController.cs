@@ -40,7 +40,7 @@ public class GameController : MonoBehaviour {
 	public Vector2 startingLocation;
 	public Vector2 targetLocation;
 	private List<edge> map;
-	private List<edge> paths;
+	private List<gameTile> paths;
 	private List<List<GameObject>> cubes;
 	private List<trafficLight> trafficLights;
 	private List<float> lightPeriods;
@@ -63,7 +63,6 @@ public class GameController : MonoBehaviour {
 //		print (topLeft);
 		BuildInitialMap ();
 		player.transform.position = (Vector3)startingLocation;
-		paths = LPAStar.GetInitialPaths (startingLocation, new Vector2(2,2), map);
 	}
 	
 	// Update is called once per frame
@@ -111,6 +110,7 @@ public class GameController : MonoBehaviour {
 							map.Add (e);
 						}
 					}
+
 					// no matter what, the cube should be set to be invisible at this location
 					cubes [i] [j].transform.position = new Vector3 (x, y, 1f);
 						
@@ -142,6 +142,16 @@ public class GameController : MonoBehaviour {
 				}
 			}
 		}
+
+		paths = LPAStar.GetInitialPaths (startingLocation, targetLocation, map);
+
+		foreach (gameTile tile in paths){
+			print (tile.position);
+			print(tile.G);
+			print(tile.F);
+			print (" ");
+		}
+		AddInfinitePaths ();
 	}
 
 	private void ScheduledMapChanges() {
@@ -178,8 +188,8 @@ public class GameController : MonoBehaviour {
 
 			// we know the location of the light, so we can simply break any edges that contain the vertices above
 			// and below
-			BreakEdges(new Vector2(light.location.x-1f,light.location.y));
-			BreakEdges (new Vector2 (light.location.x + 1f, light.location.y));
+			BreakEdges(new Vector2(light.location.x,light.location.y-1f));
+			BreakEdges (new Vector2 (light.location.x, light.location.y+1f));
 
 			// now make visible the cubes to the north and south
 			cubePosition = cubes [i - 1] [j].transform.position;
@@ -195,8 +205,8 @@ public class GameController : MonoBehaviour {
 
 			// we know the location of the light, so we can simply break any edges that contain the vertices to the
 			// left and right
-			BreakEdges(new Vector2(light.location.x,light.location.y-1f));
-			BreakEdges(new Vector2(light.location.x,light.location.y+1f));
+			BreakEdges(new Vector2(light.location.x-1f,light.location.y));
+			BreakEdges(new Vector2(light.location.x+1f,light.location.y));
 
 			cubePosition = cubes [i] [j - 1].transform.position;
 			cubePosition.z = 0;
@@ -229,17 +239,23 @@ public class GameController : MonoBehaviour {
 			StopTraffic(i - 1, j);
 			StopTraffic(i + 1, j);
 			// start traffic in the east-west direction
-			StartTraffic (i, j - 1, !light.status);
-			StartTraffic (i, j + 1, !light.status);
+			StartTraffic (i, j - 1, light.status);
+			StartTraffic (i, j + 1, light.status);
 		} else {
 			// false representes that traffic is blocked in the east-west direction, so remove the edges
 			// that contain these vertices and show the cubes associated with these vertices
 			StopTraffic(i, j-1);
 			StopTraffic(i, j+1);
 			// start the traffic in the north-south direction
-			StartTraffic (i-1, j, !light.status);
-			StartTraffic (i+1, j, !light.status);
+			StartTraffic (i-1, j, light.status);
+			StartTraffic (i+1, j, light.status);
 		}
+
+//		foreach (edge ed in map) {
+//			print (ed.p);
+//			print (ed.q);
+//			print (" ");
+//		}
 	}
 
 	private void StopTraffic(int i, int j) {
@@ -260,8 +276,9 @@ public class GameController : MonoBehaviour {
 		Vector3 cubePosition;
 		float x = j + topLeft.x; // axes are inverted between spatial and matrix coordinates
 		float y = topLeft.y - i;
-		// if ns is true, it means that we are building edges in the north-south direction
-		// if ns is false, build edges in the east-west.
+		// if ns is true, it means that traffic was blocked in the north-south but open in east-west and
+		// vice versa. so switch them.
+
 		edge e;
 		if (ns) {
 			// north edge
@@ -297,10 +314,20 @@ public class GameController : MonoBehaviour {
 
 	private void BreakEdges(Vector2 vertex) {
 		// walk backwards through the edges list and, if an edge contains this vertex, remove the edge
-		for (int i = map.Count - 1; i >= 0; i--) {
-			if ((map [i].p - vertex).magnitude < 0.1f || (map [i].q - vertex).magnitude < 0.1f) {
-				map.RemoveAt (i);
+		int i = 0;
+//		print ("break edges including " + vertex);
+		while (i < map.Count) {
+			for (i = 0; i < map.Count; i++) {
+				if (map [i].p == vertex || map [i].q == vertex) {
+//					print ("breaking edge from " + map [i].p + " to " + map [i].q);
+					map.RemoveAt (i);
+					break;
+				}
 			}
 		}
+	}
+
+	private void AddInfinitePaths() {
+		// some of the cells will have been missed by A* because they do not have any
 	}
 }

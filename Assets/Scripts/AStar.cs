@@ -12,7 +12,7 @@ public struct gameTile {
 public static class AStar {	
 	// A star is used to find the optimal path to any point in the game by looking at which edges exists between nodes
 
-	public static List<edge> navigate(Vector2 start, Vector2 dest, List<edge> graph) {
+	public static List<gameTile> navigate(Vector2 start, Vector2 dest, List<edge> graph) {
 
 //		GameController gc = (GameController)GameObject.Find ("GameController").GetComponent (typeof(GameController));
 		gameTile currentTile;
@@ -112,7 +112,7 @@ public static class AStar {
 			}
 		}
 
-		return ConvertToGraph (closed);
+		return closed;
 //		return buildPath(dest,closed);
 	}
 
@@ -189,7 +189,6 @@ public static class AStar {
 				e.p = tile.parent;
 
 				e.cost = (e.q - e.p).magnitude;
-
 				graphTree.Add (e);
 			}
 		}

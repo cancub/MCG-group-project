@@ -4,10 +4,10 @@ using UnityEngine;
 
 public class LPAStar{
 
-	private List<edge> paths;
+	private List<gameTile> paths;
 
-	public static List<edge> GetInitialPaths(Vector2 start, Vector2 end, List<edge> graph) {
-		List<edge> initialPaths = AStar.navigate(start,end,graph);
+	public static List<gameTile> GetInitialPaths(Vector2 start, Vector2 end, List<edge> graph) {
+		List<gameTile> initialPaths = AStar.navigate(start,end,graph);
 
 		return initialPaths;
 	}
